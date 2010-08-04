@@ -9,7 +9,7 @@ import Zope2
 from code import InteractiveInterpreter,InteractiveConsole
 from codeop import CommandCompiler, compile_command
 import traceback
-from raptus.torii import config
+from raptus.torii import config,utility
 from raptus.torii.socketExtended import SocketExtended
 
 
@@ -24,7 +24,7 @@ class ToriiServer(asyncore.dispatcher):
         self.bind(path)
         self.listen(256)
         self.log_info('ToriiServer is running\n\tSocketpath: %s' % path)
-        self.locals = dict()
+        self.locals = dict(sdir=utility.sdir, ls=utility.ls)
         
     def handle_accept(self):
         Thread(target=self.handle_communication).start()
@@ -126,6 +126,6 @@ class ToriiFactory(ServerFactory):
         
     def create(self):
         from ZServer.AccessLogger import access_logger
-        return ToriiServer(self.section.address.address, access_logger)
+        return ToriiServer(self.section.path.address, access_logger)
 
 
