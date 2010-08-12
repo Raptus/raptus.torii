@@ -1,17 +1,16 @@
-import sys
+import sys, os
+import socket
 import StringIO
+import cPickle
 from threading import Thread
 from ZServer.datatypes import ServerFactory
 from ZServer import CONNECTION_LIMIT, requestCloseOnExec
-import socket, os, threading
 import asyncore
 import Zope2
-from code import InteractiveInterpreter,InteractiveConsole
-from codeop import CommandCompiler, compile_command
+from codeop import compile_command
 import traceback
 from raptus.torii import config,utility
-from raptus.torii.socketExtended import SocketExtended
-
+from raptus.torii import carrier
 
 class ToriiServer(asyncore.dispatcher):
     def __init__(self, path, logger):
@@ -27,9 +26,11 @@ class ToriiServer(asyncore.dispatcher):
         self.locals = dict(sdir=utility.sdir, ls=utility.ls)
         
     def handle_accept(self):
-        Thread(target=self.handle_communication).start()
+        #todo in next step
+        self.debugmode()
+        #Thread(target=self.debugmode).start()
         
-    def handle_communication(self):
+    def debugmode(self):
         try:
             conn, addr = self.accept()
         except socket.error:
@@ -40,19 +41,19 @@ class ToriiServer(asyncore.dispatcher):
         try:
             db, aname, version_support = Zope2.bobo_application._stuff
             connection = db.open()
-            #interpreter = InteractiveInterpreter(dict(app=Zope2.bobo_application(connection)))
-            #std = eval(response,dict(__builtins__=None),dict(app=Zope2.bobo_application(db)))
-            
-            #InteractiveConsole(dict(app=Zope2.bobo_application(connection))).interact()
+
             app=Zope2.bobo_application(connection)
             self.locals.update(dict(app=app))
-            conn.send(config.PS1)
+            
+            cPickle.dump(carrier.FetchOptions(), conn.makefile())
+            options = cPickle.load(conn.makefile())
+            self.locals.update(parser=options.parser)
+            
+            cPickle.dump(carrier.GetCodeLine(),conn.makefile())
+
             commands = []
             while True:
-                data = conn.recv(4096)
-                if not data:
-                    break
-                commands.append(data)
+                commands.append(cPickle.load(conn.makefile()).line)
                 sys.stdout = StringIO.StringIO()
                 try:
                     code = compile_command('\n'.join(commands))
@@ -64,19 +65,22 @@ class ToriiServer(asyncore.dispatcher):
                         try:
                             exec code in self.locals
                         except:
-                            self.showtraceback()
-                    conn.send(sys.stdout.getvalue())
+                            cPickle.dump(carrier.SendStderr(self.showtraceback()),conn.makefile())
+                    cPickle.dump(carrier.SendStdout(sys.stdout),conn.makefile())
                     sys.stdout = old_stdout
-                    conn.send(config.PS1)
+                    cPickle.dump(carrier.GetCodeLine(),conn.makefile())
                     commands= []
                 else:
-                    conn.send(config.PS2)
+                    cPickle.dump(carrier.GetNextCodeLine(),conn.makefile())
             
             connection.close()
             del sys.stdout
             conn.shutdown(1)
-        finally:
-            sys.stdout = old_stdout
+            
+        except Exception,meg:
+            conn.close()
+
+        sys.stdout = old_stdout
 
             
     def readable(self):
@@ -91,12 +95,9 @@ class ToriiServer(asyncore.dispatcher):
         return self.socket.listen(num)
 
     def create_socket(self, family, type):
-        #asyncore.dispatcher.create_socket(self, family, type)
+        asyncore.dispatcher.create_socket(self, family, type)
         self.family_and_type = family, type
-        #self.socket = socket.socket(family, type)
-        self.socket = SocketExtended(family, type)
-        self._fileno = self.socket.fileno()
-        self.add_channel()
+        self.socket = socket.socket(family, type)
         requestCloseOnExec(self.socket)
 
 
@@ -114,7 +115,9 @@ class ToriiServer(asyncore.dispatcher):
             list[len(list):] = traceback.format_exception_only(type, value)
         finally:
             tblist = tb = None
-        map(sys.stdout.write, list)
+            err = StringIO.StringIO()
+            err.writelines(list)
+            return err
 
 class ToriiFactory(ServerFactory):
     

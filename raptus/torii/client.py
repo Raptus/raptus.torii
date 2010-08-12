@@ -1,5 +1,7 @@
-import socket
 import sys
+import socket
+import cPickle
+import StringIO
 from optparse import OptionParser
 from raptus.torii import config
 
@@ -33,45 +35,22 @@ class Client(object):
     
     def __init__(self, path):
         self.path = path
-        self.mode = sys.argv.pop()
         
     
     def main(self):
-        
-        if self.mode == 'help':
-            print self.__doc__
-        elif self.mode == 'debug':
-            self.connect()
-
-
-    def connect(self):
         try:
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             sock.connect(self.path)
-            response =''
+            ioSocket = sock.makefile()
             while True:
-                while True:
-                    try:
-                        data = sock.recv(4096)
-                        break
-                    except socket.error:
-                        pass
-                if not data:
-                    break
-                if data.find(config.PS1) == 0 or data.find(config.PS2) == 0:
-                    sock.send(self.input(data))
-                else:
-                    sys.stdout.write(data)
-            sock.close()
+                carrier = cPickle.load(ioSocket)
+                carrier.executable(self)
+                if carrier.sendBack:
+                    cPickle.dump(carrier, sock.makefile())
         except socket.error, msg:
                     print msg
+        except KeyboardInterrupt:
+            sock.close()
+        sock.close()
 
-    def input(self, data):
-        if self.mode == 'debug':
-            input = raw_input(data)
-            return '%s%s' % (input, input == '' and '\n' or '' )
-        
-        
-        
-        
-        
+
