@@ -25,6 +25,8 @@ setup(name='raptus.torii',
       zip_safe=False,
       install_requires=[
           'setuptools',
+          'ipython',
+          'Twisted>=8.0.1'
           # -*- Extra requirements: -*-
       ],
       entry_points="""

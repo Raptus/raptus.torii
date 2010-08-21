@@ -7,10 +7,28 @@ from ZServer.datatypes import ServerFactory
 from ZServer import CONNECTION_LIMIT, requestCloseOnExec
 import asyncore
 import Zope2
+from IPython.ipmaker import make_IPython
+from IPython.Prompts import CachedOutput
 from codeop import compile_command
+from pprint import PrettyPrinter
 import traceback
 from raptus.torii import config,utility
 from raptus.torii import carrier
+
+
+def result_display(self, arg):
+    from IPython.hooks import result_display
+    result_display(self, arg)
+    import StringIO
+    self.outStringIO = StringIO.StringIO()
+    if self.rc.pprint:
+        out =  PrettyPrinter().pformat(arg)
+        if '\n' in out:
+            self.outStringIO.write('\n')
+        print >> self.outStringIO, out
+    else:
+        print >> self.outStringIO, repr(arg)
+    return None 
 
 class ToriiServer(asyncore.dispatcher):
     def __init__(self, path, logger):
@@ -21,58 +39,53 @@ class ToriiServer(asyncore.dispatcher):
             pass
         self.create_socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.bind(path)
-        self.listen(256)
+        self.listen(1)
+        self.socket.setblocking(True)
         self.log_info('ToriiServer is running\n\tSocketpath: %s' % path)
         self.locals = dict(sdir=utility.sdir, ls=utility.ls)
         
     def handle_accept(self):
         #todo in next step
-        self.debugmode()
+        self.log_info('someone connected on torii server')
+        self.interactiveMode()
+        self.log_info('end of torii connection')
         #Thread(target=self.debugmode).start()
         
-    def debugmode(self):
-        try:
-            conn, addr = self.accept()
-        except socket.error:
-            self.log_info('Server accept() threw an exception', 'warning')
-            return
-        
-        old_stdout = sys.stdout
+    def interactiveMode(self):
+
+        conn, addr = self.accept()
+                
+        interpreter = make_IPython(argv=[],embedded=True,user_global_ns=self.locals)
+        interpreter.set_hook('result_display',result_display)
+        """
+        cache = CachedOutput(interpreter,
+                             interpreter.rc.cache_size,
+                             interpreter.rc.pprint,
+                             input_sep = interpreter.rc.separate_in,
+                             output_sep = interpreter.rc.separate_out,
+                             output_sep2 = interpreter.rc.separate_out2,
+                             ps1 = interpreter.rc.prompt_in1,
+                             ps2 = interpreter.rc.prompt_in2,
+                             ps_out = interpreter.rc.prompt_out,)
+        """
         try:
             db, aname, version_support = Zope2.bobo_application._stuff
             connection = db.open()
 
             app=Zope2.bobo_application(connection)
             self.locals.update(dict(app=app))
-            
-            cPickle.dump(carrier.FetchOptions(), conn.makefile())
-            options = cPickle.load(conn.makefile())
+            options = self.conversation(conn, carrier.FetchOptions())
             self.locals.update(parser=options.parser)
-            
-            cPickle.dump(carrier.GetCodeLine(),conn.makefile())
-
-            commands = []
+            #self.conversiontion(conn, carrier.SendDisplayHook(interpreter.readline))
             while True:
-                commands.append(cPickle.load(conn.makefile()).line)
-                sys.stdout = StringIO.StringIO()
+                input = self.conversation(conn, carrier.GetCodeLine(interpreter))
                 try:
-                    code = compile_command('\n'.join(commands))
-                except:
-                    self.showtraceback()
-                    code = False
-                if code is not None:
-                    if code:
-                        try:
-                            exec code in self.locals
-                        except:
-                            cPickle.dump(carrier.SendStderr(self.showtraceback()),conn.makefile())
-                    cPickle.dump(carrier.SendStdout(sys.stdout),conn.makefile())
-                    sys.stdout = old_stdout
-                    cPickle.dump(carrier.GetCodeLine(),conn.makefile())
-                    commands= []
-                else:
-                    cPickle.dump(carrier.GetNextCodeLine(),conn.makefile())
-            
+                    while interpreter.push(input.line):
+                        input = self.conversation(conn, carrier.GetNextCodeLine(interpreter))
+                except Exception, mesg:
+                    self.conversation(conn, carrier.SendStderr(genutils.Term.cout.stream))
+                self.conversation(conn, carrier.SendStdout(interpreter.outStringIO))
+                
             connection.close()
             del sys.stdout
             conn.shutdown(1)
@@ -80,8 +93,10 @@ class ToriiServer(asyncore.dispatcher):
         except Exception,meg:
             conn.close()
 
-        sys.stdout = old_stdout
-
+    def conversation(self, connection, carrierObject):
+        io = connection.makefile()
+        cPickle.dump(carrierObject, connection.makefile())
+        return cPickle.load(connection.makefile())
             
     def readable(self):
         return len(asyncore.socket_map) < CONNECTION_LIMIT
@@ -89,16 +104,9 @@ class ToriiServer(asyncore.dispatcher):
     def writable (self):
         return True
     
-    def listen(self, num):
-        # override asyncore limits for nt's listen queue size
-        self.accepting = 1
-        return self.socket.listen(num)
-
     def create_socket(self, family, type):
         asyncore.dispatcher.create_socket(self, family, type)
-        self.family_and_type = family, type
-        self.socket = socket.socket(family, type)
-        requestCloseOnExec(self.socket)
+        #requestCloseOnExec(self.socket)
 
 
     def showtraceback(self):

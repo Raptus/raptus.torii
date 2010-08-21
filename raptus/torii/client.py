@@ -41,13 +41,12 @@ class Client(object):
         try:
             sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
             sock.connect(self.path)
-            ioSocket = sock.makefile()
             while True:
-                carrier = cPickle.load(ioSocket)
+                carrier = cPickle.load(sock.makefile())
                 carrier.executable(self)
-                if carrier.sendBack:
-                    cPickle.dump(carrier, sock.makefile())
+                cPickle.dump(carrier, sock.makefile())
         except socket.error, msg:
+                    # !!! TODO
                     print msg
         except KeyboardInterrupt:
             sock.close()
