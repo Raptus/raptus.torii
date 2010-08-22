@@ -1,11 +1,25 @@
 import sys
 from optparse import OptionParser
 from raptus.torii import config
+import cPickle
 
-def completer( text, state):
-    if not state:
-        return 'teeeeeeest'
-
+class Completer(object):
+    
+    def __init__(self, sock):
+        self.sock = sock
+        self.memo = {'':[]}
+        
+    def completer(self, text, state):
+        if not self.memo.has_key(text):
+            cPickle.dump(FetchCompleter(text,state), self.sock.makefile())
+            carrier = cPickle.load(self.sock.makefile())
+            self.memo.update({text:carrier.result})
+        for cmd in self.memo[text]:
+            if cmd.startswith(text):
+                if not state:
+                    return cmd
+                else:
+                    state -= 1
 
 
 
@@ -23,6 +37,14 @@ class BaseCarrier(object):
         """
         print "ooops you need to override this methode in the BaseCarrier"
         
+class BaseCounterCarrier(object):
+    __doc__ = """
+        CounterCarrier is a request from the client to the server.
+    """
+    def executable(self, interpreter):
+        print 'override this methode in counterCarrier'
+    
+    
     
 class FetchOptions(BaseCarrier):
     
@@ -43,23 +65,19 @@ class GetCodeLine(BaseCarrier):
         self.ps1 = sys.displayhook.ps1_str
         self.ps2 = sys.displayhook.ps1_str
     
-    def setReadline(self):
+    def setReadline(self, client):
         import readline
-        
         readline = self.readline
         readline.parse_and_bind('tab: complete')
-        readline.set_completer(completer)
+        readline.set_completer(Completer(client.sock).completer)
     
     def executable(self, client):
         import sys
-        self.setReadline()
+        self.setReadline(client)
         sys.ps1 = self.ps1
         sys.ps2 = self.ps2
         self.line = raw_input(sys.ps1)
-        del self.counterquestion
         
-    def counterquestion(self, interpreter):
-        interpreter.Completer.complete(text, state)
 
 class GetNextCodeLine(GetCodeLine):
     
@@ -89,3 +107,10 @@ class SendStderr(SendStdout):
             sys.stderr.write(out)
         sys.stdout.write('\n')
 
+
+class FetchCompleter(BaseCounterCarrier):
+    def __init__(self, text, state):
+        self.text = text
+        self.state = state
+    def executable(self, interpreter):
+        self.result = interpreter.complete(self.text)

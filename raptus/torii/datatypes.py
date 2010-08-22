@@ -55,8 +55,8 @@ class ToriiServer(asyncore.dispatcher):
 
         conn, addr = self.accept()
                 
-        interpreter = make_IPython(argv=[],embedded=True,user_global_ns=self.locals)
-        interpreter.set_hook('result_display',result_display)
+        self.interpreter = make_IPython(argv=[],embedded=True,user_global_ns=self.locals)
+        self.interpreter.set_hook('result_display',result_display)
         """
         cache = CachedOutput(interpreter,
                              interpreter.rc.cache_size,
@@ -78,13 +78,13 @@ class ToriiServer(asyncore.dispatcher):
             self.locals.update(parser=options.parser)
             #self.conversiontion(conn, carrier.SendDisplayHook(interpreter.readline))
             while True:
-                input = self.conversation(conn, carrier.GetCodeLine(interpreter))
+                input = self.conversation(conn, carrier.GetCodeLine(self.interpreter))
                 try:
-                    while interpreter.push(input.line):
-                        input = self.conversation(conn, carrier.GetNextCodeLine(interpreter))
+                    while self.interpreter.push(input.line):
+                        input = self.conversation(conn, carrier.GetNextCodeLine(self.interpreter))
                 except Exception, mesg:
                     self.conversation(conn, carrier.SendStderr(genutils.Term.cout.stream))
-                self.conversation(conn, carrier.SendStdout(interpreter.outStringIO))
+                self.conversation(conn, carrier.SendStdout(self.interpreter.outStringIO))
                 
             connection.close()
             del sys.stdout
@@ -94,9 +94,16 @@ class ToriiServer(asyncore.dispatcher):
             conn.close()
 
     def conversation(self, connection, carrierObject):
-        io = connection.makefile()
         cPickle.dump(carrierObject, connection.makefile())
-        return cPickle.load(connection.makefile())
+        while True:
+            obj = cPickle.load(connection.makefile())
+            if isinstance(obj, carrier.BaseCarrier):
+                break;
+            else:
+                obj.executable(self.interpreter)
+                cPickle.dump(obj, connection.makefile())
+
+        return obj
             
     def readable(self):
         return len(asyncore.socket_map) < CONNECTION_LIMIT

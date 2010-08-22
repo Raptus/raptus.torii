@@ -39,17 +39,17 @@ class Client(object):
     
     def main(self):
         try:
-            sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            sock.connect(self.path)
+            self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            self.sock.connect(self.path)
             while True:
-                carrier = cPickle.load(sock.makefile())
+                carrier = cPickle.load(self.sock.makefile())
                 carrier.executable(self)
-                cPickle.dump(carrier, sock.makefile())
+                cPickle.dump(carrier, self.sock.makefile())
         except socket.error, msg:
                     # !!! TODO
                     print msg
         except KeyboardInterrupt:
-            sock.close()
-        sock.close()
+            self.sock.close()
+        self.sock.close()
 
 
