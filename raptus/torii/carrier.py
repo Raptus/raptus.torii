@@ -3,11 +3,12 @@ from optparse import OptionParser
 from raptus.torii import config
 import cPickle
 
+
 class Completer(object):
     
     def __init__(self, sock):
         self.sock = sock
-        self.memo = {'':[]}
+        self.memo = {'':[config.tab_replacement]}
         
     def completer(self, text, state):
         if not self.memo.has_key(text):
@@ -62,9 +63,9 @@ class GetCodeLine(BaseCarrier):
     
     def __init__(self,interpreter):
         self.readline = interpreter.readline
-        self.ps1 = sys.displayhook.ps1_str
-        self.ps2 = sys.displayhook.ps1_str
-    
+        self.ps1 = str(sys.displayhook.prompt1)
+        self.ps2 = str(sys.displayhook.prompt2)
+
     def setReadline(self, client):
         import readline
         readline = self.readline
@@ -82,7 +83,7 @@ class GetCodeLine(BaseCarrier):
 class GetNextCodeLine(GetCodeLine):
     
     def executable(self, client):
-        self.setReadline()
+        self.setReadline(client)
         self.line = raw_input(sys.ps2)
 
 
@@ -91,12 +92,13 @@ class SendStdout(BaseCarrier):
     
     def __init__(self, stringIO):
         self.stringIO = stringIO
+        self.promt_out = str(sys.displayhook.prompt_out)
     
     def executable(self, client):
         self.stringIO.seek(0)
+        sys.stdout.write(self.promt_out)
         for out in self.stringIO:
             sys.stdout.write(out)
-        sys.stdout.write('\n')
 
 
 class SendStderr(SendStdout):
@@ -105,7 +107,6 @@ class SendStderr(SendStdout):
         self.stringIO.seek(0)
         for out in self.stringIO:
             sys.stderr.write(out)
-        sys.stdout.write('\n')
 
 
 class FetchCompleter(BaseCounterCarrier):

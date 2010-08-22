@@ -1,4 +1,3 @@
 import sys
 
-PS1 = '>>> '
-PS2 = '... '
+tab_replacement = '    '

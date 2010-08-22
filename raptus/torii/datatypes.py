@@ -57,6 +57,7 @@ class ToriiServer(asyncore.dispatcher):
                 
         self.interpreter = make_IPython(argv=[],embedded=True,user_global_ns=self.locals)
         self.interpreter.set_hook('result_display',result_display)
+        self.interpreter.InteractiveTB.out = StringIO.StringIO()
         """
         cache = CachedOutput(interpreter,
                              interpreter.rc.cache_size,
