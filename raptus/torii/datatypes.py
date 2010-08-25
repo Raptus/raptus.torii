@@ -9,6 +9,7 @@ import asyncore
 import Zope2
 from IPython.ipmaker import make_IPython
 from IPython.ultraTB import AutoFormattedTB as BaseAutoFormattedTB
+from IPython.iplib import SyntaxTB as BaseSyntaxTB
 from codeop import compile_command
 from pprint import PrettyPrinter
 import traceback
@@ -32,6 +33,12 @@ class AutoFormattedTB(BaseAutoFormattedTB):
         kw.update(dict(out=self.errStringIO))
         return BaseAutoFormattedTB.__call__(self, *args, **kw)
 
+class SyntaxTB(BaseSyntaxTB):
+    def __call__(self, etype, value, elist):
+        self.errStringIO = StringIO.StringIO()
+        self.last_syntax_error = value
+        print >> self.errStringIO, self.text(etype,value,elist)
+        
 
 class ToriiServer(asyncore.dispatcher):
     def __init__(self, path, logger):
@@ -60,10 +67,11 @@ class ToriiServer(asyncore.dispatcher):
                 
         self.interpreter = make_IPython(argv=[],embedded=True,user_global_ns=self.locals)
         self.interpreter.set_hook('result_display',result_display)
-        color = self.interpreter.InteractiveTB.old_scheme
+        color = self.interpreter.rc.colors
         self.interpreter.InteractiveTB = AutoFormattedTB(mode = 'Plain',
                                                          color_scheme=color,
                                                          tb_offset = 1)
+        self.interpreter.SyntaxTB = SyntaxTB(color_scheme=color)
 
         try:
             db, aname, version_support = Zope2.bobo_application._stuff
@@ -78,6 +86,7 @@ class ToriiServer(asyncore.dispatcher):
                 """
                 self.interpreter.outStringIO = StringIO.StringIO()
                 self.interpreter.InteractiveTB.errStringIO = StringIO.StringIO()
+                self.interpreter.SyntaxTB.errStringIO = StringIO.StringIO()
                 
                 input = self.conversation(conn, carrier.GetCodeLine(self.interpreter))
                 try:
@@ -86,6 +95,9 @@ class ToriiServer(asyncore.dispatcher):
                 except Exception, mesg:
                     pass
                 stderr = self.interpreter.InteractiveTB.errStringIO
+                if stderr.len:
+                    self.conversation(conn, carrier.SendStderr(stderr))
+                stderr = self.interpreter.SyntaxTB.errStringIO
                 if stderr.len:
                     self.conversation(conn, carrier.SendStderr(stderr))
                 stdout = self.interpreter.outStringIO
