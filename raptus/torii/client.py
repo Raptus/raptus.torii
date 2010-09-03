@@ -7,7 +7,7 @@ from raptus.torii import config
 
 class Client(object):
     
-    __doc__ = """
+    """
      A torii is a traditional Japanese gate most commonly 
      found at the entrance of or within a Shinto shrine.
      But in the zopy-world raptus.torii provide a gate to a
@@ -30,7 +30,7 @@ class Client(object):
 
      create      start as debug mode but record all the giving input
                  and store them in the directory of externals-script
-              """
+    """
               
     
     def __init__(self, path):

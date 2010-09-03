@@ -25,8 +25,7 @@ class Completer(object):
 
 
 class BaseCarrier(object):
-    __doc__="""
-        The communicatin between ZopeServer and Client goes over the instance BaseCarrier.
+    """ The communicatin between ZopeServer and Client goes over the instance BaseCarrier.
         The server send a pickle-instance to the client. The clinet recive the object and run
         a executable methode on this class. After all this the client send the object back
         to the ZopeServer.
@@ -39,8 +38,7 @@ class BaseCarrier(object):
         print "ooops you need to override this methode in the BaseCarrier"
         
 class BaseCounterCarrier(object):
-    __doc__ = """
-        CounterCarrier is a request from the client to the server.
+    """ CounterCarrier is a request from the client to the server.
     """
     def executable(self, interpreter):
         print 'override this methode in counterCarrier'
