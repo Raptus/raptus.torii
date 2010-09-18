@@ -2,6 +2,7 @@ import sys, os
 import socket
 import StringIO
 import cPickle
+import Zope2
 from threading import Thread
 from ZServer.datatypes import ServerFactory
 from ZServer import CONNECTION_LIMIT, requestCloseOnExec
@@ -18,12 +19,13 @@ from raptus.torii import carrier
 from raptus.torii.conversation import Conversation
 
 class ToriiServer(asyncore.dispatcher):
-    def __init__(self, path, logger):
+    def __init__(self, path,threaded, logger):
         asyncore.dispatcher.__init__(self)
         try:
             os.unlink(path)
         except os.error:
             pass
+        self.threaded = threaded
         self.create_socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.bind(path)
         self.listen(1)
@@ -31,14 +33,13 @@ class ToriiServer(asyncore.dispatcher):
         self.log_info('ToriiServer is running\n\tSocketpath: %s' % path)
         
     def handle_accept(self):
-        #todo in next step
         self.log_info('someone connected on torii server')
-        conn, addr = self.accept()
-        conversation = Conversation(conn)
-        conversation.run()
-        #self.log_info('end of torii connection')
-        #Thread(target=self.debugmode).start()
-        
+        connection, addr = self.accept()
+        conversation = Conversation(connection)
+        if self.threaded:
+            conversation.start()
+        else:
+            conversation.run()
             
     def readable(self):
         return len(asyncore.socket_map) < CONNECTION_LIMIT
@@ -48,8 +49,6 @@ class ToriiServer(asyncore.dispatcher):
     
     def create_socket(self, family, type):
         asyncore.dispatcher.create_socket(self, family, type)
-        #requestCloseOnExec(self.socket)
-
 
 class ToriiFactory(ServerFactory):
     
@@ -61,6 +60,6 @@ class ToriiFactory(ServerFactory):
         
     def create(self):
         from ZServer.AccessLogger import access_logger
-        return ToriiServer(self.section.path.address, access_logger)
+        return ToriiServer(self.section.path.address, self.section.threaded, access_logger)
 
 

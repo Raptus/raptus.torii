@@ -8,7 +8,32 @@ from raptus.torii import config
 class Client(object):
     
     """
-     A torii is a traditional Japanese gate most commonly 
+                                                            
+            .....:::::::MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM   
+  OMMMMMMMMMMMMMMMMMMMMMMM   MMMMMMMMMMMMMMMMMMMMMMM~MM     
+   MM 8M MMM   M  MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM      
+    MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM,NM MM                
+             M MD                       M MM                
+             M MM?                   ==MMIMMM88NMMM         
+        MMMMMM MMMMMMMMMMMMMMMMMMMMMMMM MIMM   M  M         
+        MMM MM MMMMMMMMMMMMMMMMMMMMMMMMMM MMMMMMMMM         
+             M M                        M MM                
+             MMM                        MIMM                
+             MMM                        MIMM                
+             M?M                        M MM                
+             MMM                        M MM                
+             MMM                        MIMM                
+             MMM                        M~MM                
+             MMM                        M7MM                
+             7MM                        MIMM                
+             7MM                        MIMM                
+             IMM                        M7MM                
+              MM                        MIMM                
+             7MM                        MIMM                
+             :::                        MDMM                
+    
+    
+     Torii is a traditional Japanese gate most commonly 
      found at the entrance of or within a Shinto shrine.
      But in the zopy-world raptus.torii provide a gate to a
      running zope-server (holy-zopy). The access to the server can be
@@ -49,7 +74,7 @@ class Client(object):
                     # !!! TODO
                     print msg
         except KeyboardInterrupt:
-            self.sock.close()
+            pass
         self.sock.close()
 
 

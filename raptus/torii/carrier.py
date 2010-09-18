@@ -2,6 +2,7 @@ import sys
 from optparse import OptionParser
 from raptus.torii import config
 import cPickle
+import readline
 
 
 class Completer(object):
@@ -45,10 +46,10 @@ class BaseCounterCarrier(object):
     
     
     
-class FetchOptions(BaseCarrier):
+class FetchArguments(BaseCarrier):
     
     def executable(self, client):
-        self.parser = OptionParser()
+        self.arguments = sys.argv
 
 class SendDisplayHook(BaseCarrier):
     def __init__(self, displayhook):
@@ -65,13 +66,11 @@ class GetCodeLine(BaseCarrier):
         self.ps2 = str(sys.displayhook.prompt2)
 
     def setReadline(self, client):
-        import readline
         readline = self.readline
         readline.parse_and_bind('tab: complete')
         readline.set_completer(Completer(client.sock).completer)
     
     def executable(self, client):
-        import sys
         self.setReadline(client)
         sys.ps1 = self.ps1
         sys.ps2 = self.ps2
@@ -96,7 +95,7 @@ class SendStdout(BaseCarrier):
         self.stringIO.seek(0)
         sys.stdout.write(self.promt_out)
         for out in self.stringIO:
-            sys.stdout.write(out)
+            print >> sys.stdout, out
 
 
 class SendStderr(SendStdout):
@@ -104,8 +103,26 @@ class SendStderr(SendStdout):
     def executable(self, client):
         self.stringIO.seek(0)
         for out in self.stringIO:
-            sys.stderr.write(out)
+            print >> sys.stderr, out
 
+class PrintHelpText(BaseCarrier):
+    
+    def executable(self, client):
+        print >> sys.stdout, client.__doc__
+
+class PrintText(BaseCarrier):
+    
+    def __init__(self, text):
+        self.text = text
+    
+    def executable(self, client):
+        print >> sys.stdout, self.text
+
+class ExitTorii(BaseCarrier):
+    
+    def executable(self, client):
+        client.sock.close()
+        sys.exit()
 
 class FetchCompleter(BaseCounterCarrier):
     def __init__(self, text, state):

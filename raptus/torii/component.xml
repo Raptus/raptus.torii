@@ -1,6 +1,6 @@
 <component prefix="raptus.torii.datatypes">
     
-      <abstracttype name="Torii.server">
+  <abstracttype name="Torii.server">
     <description>
       The "server" type is used to describe a single type of server
       instance.  The value for a server section is an object with the
@@ -12,6 +12,7 @@
                datatype=".ToriiFactory"
                implements="ZServer.server">
     <key name="path" datatype="socket-binding-address"/>
+    <key name="threaded" datatype="boolean"/>
   </sectiontype>
     
 </component>
