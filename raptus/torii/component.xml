@@ -13,6 +13,9 @@
                implements="ZServer.server">
     <key name="path" datatype="socket-binding-address"/>
     <key name="threaded" datatype="boolean"/>
+    <key name="extends" datatype="string"/>
+    <key name="params" datatype="string"/>
+
   </sectiontype>
     
 </component>

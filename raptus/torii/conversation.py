@@ -43,7 +43,7 @@ class Conversation(threading.Thread):
     def __init__(self, connection):
         super(Conversation, self).__init__()
         self.connection = connection
-        self.locals = dict(sdir=utility.sdir, ls=utility.ls)
+        self.locals = config.utilities
         
         self.interpreter = make_IPython(argv=[],embedded=True,user_global_ns=self.locals)
         self.interpreter.set_hook('result_display',result_display)
@@ -56,9 +56,23 @@ class Conversation(threading.Thread):
         self.locals.update(arguments=self.arguments)
         
     def run(self):
-        dbConnection = Zope2.DB.open('torii-DB-%s' % threading._counter)
+        dbConnection = Zope2.DB.open()
         application=Zope2.bobo_application(connection=dbConnection)
         self.locals.update(dict(app=application))
+
+        for name, func in config.properties.items():
+            if hasattr(func, 'func_code'):
+                di = func.func_globals
+                di.update(self.locals)
+                res = eval(func.func_code,di)
+                self.locals.update({name:res})
+                continue
+            try:
+                res = func()
+                self.locals.update({name:res})
+                continue
+            except:
+                self.locals.update({name:func})
 
         mode = dict(    help = lambda: self.conversation(carrier.PrintHelpText()),
                         debug = self.interactiveMode,
@@ -85,10 +99,17 @@ class Conversation(threading.Thread):
             self.connection.close()
     
     def listScripts(self):
-        pass
-    
+        self.conversation(carrier.PrintText('here is a list with all available scripts:\n'))
+        for name, path in config.scripts.items():
+            self.conversation(carrier.PrintText(' '*10+name))
+
     def runScript(self):
-        pass
+        name = self.arguments[2]
+        path = config.scripts.get(name)
+        f = file(path)
+        code = compile_command(f.read(),path,'exec')
+        f.close()
+        self.interpreter.runcode(code)
         
     def interactiveMode(self):
         while True:

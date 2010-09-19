@@ -1,31 +1,23 @@
 import sys, os
 import socket
-import StringIO
-import cPickle
-import Zope2
-from threading import Thread
+import csv
 from ZServer.datatypes import ServerFactory
 from ZServer import CONNECTION_LIMIT, requestCloseOnExec
 import asyncore
-import Zope2
-from IPython.ipmaker import make_IPython
-from IPython.ultraTB import AutoFormattedTB as BaseAutoFormattedTB
-from IPython.iplib import SyntaxTB as BaseSyntaxTB
-from codeop import compile_command
-from pprint import PrettyPrinter
-import traceback
-from raptus.torii import config,utility
-from raptus.torii import carrier
+from raptus.torii import config
 from raptus.torii.conversation import Conversation
 
 class ToriiServer(asyncore.dispatcher):
-    def __init__(self, path,threaded, logger):
+    def __init__(self, path,section, logger):
         asyncore.dispatcher.__init__(self)
         try:
             os.unlink(path)
         except os.error:
             pass
-        self.threaded = threaded
+        self.threaded = section.threaded
+        self.extends = self.parse_to_list(section.extends)
+        self.params = self.parse_to_dict(section.params)
+        self.include_ext()
         self.create_socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.bind(path)
         self.listen(1)
@@ -49,7 +41,31 @@ class ToriiServer(asyncore.dispatcher):
     
     def create_socket(self, family, type):
         asyncore.dispatcher.create_socket(self, family, type)
+        
+    def parse_to_list(self, string):
+        return [i.strip() for i in string.split(';')]
 
+    def parse_to_dict(self, string):
+        res = dict()
+        for i in self.parse_to_list(string):
+            k,v = i.split(':')
+            res.update({k.strip():v.strip()})
+        return res
+    
+    def include_ext(self):
+        for ext in self.extends:
+            imp = __import__(ext, None, None, ext)
+            
+            if hasattr(imp,'initialize'):
+                imp.initialize(self.params)
+            if hasattr(imp,'utilities'):
+                config.utilities.update(imp.utilities)
+            if hasattr(imp,'properties'):
+                config.properties.update(imp.properties)
+            if hasattr(imp,'scripts'):
+                config.scripts.update(imp.scripts)
+        
+    
 class ToriiFactory(ServerFactory):
     
     def __init__(self, section):
@@ -60,6 +76,6 @@ class ToriiFactory(ServerFactory):
         
     def create(self):
         from ZServer.AccessLogger import access_logger
-        return ToriiServer(self.section.path.address, self.section.threaded, access_logger)
+        return ToriiServer(self.section.path.address, self.section, access_logger)
 
 
