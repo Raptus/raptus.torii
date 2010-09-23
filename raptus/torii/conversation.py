@@ -11,7 +11,7 @@ from IPython.iplib import SyntaxTB as BaseSyntaxTB
 from codeop import compile_command
 from pprint import PrettyPrinter
 import traceback
-from raptus.torii import config,utility
+from raptus.torii import config
 from raptus.torii import carrier
 
 def result_display(self, arg):
