@@ -43,10 +43,14 @@ class ToriiServer(asyncore.dispatcher):
         asyncore.dispatcher.create_socket(self, family, type)
         
     def parse_to_list(self, string):
+        if not string:
+            return []
         return [i.strip() for i in string.split(';')]
 
     def parse_to_dict(self, string):
         res = dict()
+        if not string:
+            return res
         for i in self.parse_to_list(string):
             k,v = i.split(':')
             res.update({k.strip():v.strip()})
