@@ -5,6 +5,7 @@ import cPickle
 import threading
 import Zope2
 import Globals
+from Testing.makerequest import makerequest
 from IPython.ipmaker import make_IPython
 from IPython.ultraTB import AutoFormattedTB as BaseAutoFormattedTB
 from IPython.iplib import SyntaxTB as BaseSyntaxTB
@@ -40,10 +41,11 @@ class SyntaxTB(BaseSyntaxTB):
 
 class Conversation(threading.Thread):
     
-    def __init__(self, connection):
+    def __init__(self, connection, configuration):
         super(Conversation, self).__init__()
         self.connection = connection
-        self.locals = config.utilities
+        self.configuration = configuration
+        self.locals = configuration.utilities
         
         self.interpreter = make_IPython(argv=[],embedded=True,user_global_ns=self.locals)
         self.interpreter.set_hook('result_display',result_display)
@@ -54,13 +56,18 @@ class Conversation(threading.Thread):
         self.interpreter.SyntaxTB = SyntaxTB(color_scheme=color)
         self.arguments = self.conversation(carrier.FetchArguments()).arguments
         self.locals.update(arguments=self.arguments)
+        self.locals.update(conversation=self.conversation)
         
     def run(self):
         dbConnection = Zope2.DB.open()
         application=Zope2.bobo_application(connection=dbConnection)
-        self.locals.update(dict(app=application))
+        application=makerequest(application)
+        self.locals.update(app=application)
 
-        for name, func in config.properties.items():
+        for func in self.configuration.utilities.values():
+            getattr(func, 'func_globals', {}).update(self.locals)
+
+        for name, func in self.configuration.properties.items():
             if hasattr(func, 'func_code'):
                 di = func.func_globals
                 di.update(self.locals)
@@ -95,19 +102,25 @@ class Conversation(threading.Thread):
             self.conversation(carrier.ExitTorii())
                 
         except:
+            dbConnection.transaction_manager.abort()
             dbConnection.close()
             self.connection.close()
     
     def listScripts(self):
         self.conversation(carrier.PrintText('here is a list with all available scripts:\n'))
-        for name, path in config.scripts.items():
+        for name, path in self.configuration.scripts.items():
             self.conversation(carrier.PrintText(' '*10+name))
 
     def runScript(self):
         name = self.arguments[2]
-        path = config.scripts.get(name)
+        path = self.configuration.scripts.get(name, None)
+        if path is None:
+            self.conversation(carrier.PrintText("Sorry, but this script dosen't exist"))
+            return
         f = file(path)
         code = compile_command(f.read(),path,'exec')
+        if code is None:
+            self.conversation(carrier.PrintText('script is not finished, blank line at the end missing?'))
         f.close()
         self.interpreter.runcode(code)
         

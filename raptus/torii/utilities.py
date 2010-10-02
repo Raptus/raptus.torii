@@ -1,4 +1,6 @@
-
+# ohhh we have a loop around the imports
+# workaround: only import torii instead the module carrier
+from raptus import torii
 
 def sdir(value):
     biggest = 0
@@ -12,9 +14,9 @@ def sdir(value):
         except:
             content = '????'
             pass
-        print i,' '* (biggest - len(i)), content
+        conversation(torii.carrier.PrintText(i+' '* (biggest - len(i))+content))
 
 
 def ls(node):
     for i in node.getChildNodes():
-        print repr(i)
+        conversation(torii.carrier.PrintText(repr(i)))

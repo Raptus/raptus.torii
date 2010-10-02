@@ -75,6 +75,7 @@ class Client(object):
                     print msg
         except KeyboardInterrupt:
             pass
+        print >> sys.stdout, '\n'
         self.sock.close()
 
 

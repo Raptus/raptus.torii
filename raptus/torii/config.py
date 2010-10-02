@@ -1,10 +1,12 @@
-import sys
+import sys,os
 import utilities
 
 utilities = dict(sdir=utilities.sdir, ls=utilities.ls)
 """ utilities are a set of helper function. this will appear as globals
     in your python prompt. This globals can be extended with additionals
-    packages. To extend take a look in raptus.torii.plone.
+    packages. To extend take a look in raptus.torii.plone. Before the prompt
+    is started we add all locals to this function. This way is possible to
+    use app, conversation,.. and others attributes.
 """
 properties = dict()
 """ properties are a set of helper attributes. Similar to the utilities, but
@@ -14,7 +16,7 @@ properties = dict()
     in the globals. To extend take a look in raptus.torii.plone.
 """
 
-scripts = dict()
+scripts = dict(pack= '%s/scripts/pack.py' % os.path.dirname(__file__))
 """ scripts can be run directly without the a python prompt over torii. It's
     easy to customize you own scripts. Again pleas take a look
     at raptus.torii.plone
