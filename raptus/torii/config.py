@@ -22,9 +22,9 @@ scripts = dict(pack= '%s/scripts/pack.py' % os.path.dirname(__file__))
     at raptus.torii.plone
 """
 
-
-
-
+interpreter = None
+""" here comes the standard interpreter
+"""
 
 
 tab_replacement = '    '

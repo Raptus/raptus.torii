@@ -48,6 +48,7 @@ class Configuration(object):
         self.utilities = copy(config.utilities)
         self.properties = copy(config.properties)
         self.scripts = copy(config.scripts)
+        self.interpreter = None # here commes the standard interpreter 
         for ext in self.extends:
             imp = __import__(ext, None, None, ext)
             
@@ -59,6 +60,8 @@ class Configuration(object):
                 self.properties.update(imp.properties)
             if hasattr(imp,'scripts'):
                 self.scripts.update(imp.scripts)
+            if hasattr(imp,'interpreter'):
+                self.interpreter = imp.interpreter
 
     def parse_to_list(self, string):
         if not string:

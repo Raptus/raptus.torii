@@ -1,43 +1,13 @@
 import sys, os
-import socket
-import StringIO
 import cPickle
 import threading
 import Zope2
 import Globals
 from Testing.makerequest import makerequest
-from IPython.ipmaker import make_IPython
-from IPython.ultraTB import AutoFormattedTB as BaseAutoFormattedTB
-from IPython.iplib import SyntaxTB as BaseSyntaxTB
 from codeop import compile_command
-from pprint import PrettyPrinter
-import traceback
 from raptus.torii import config
 from raptus.torii import carrier
 
-def result_display(self, arg):
-    self.outStringIO = StringIO.StringIO()
-    if self.rc.pprint:
-        out =  PrettyPrinter().pformat(arg)
-        if '\n' in out:
-            self.outStringIO.write('\n')
-        print >> self.outStringIO, out
-    else:
-        print >> self.outStringIO, repr(arg)
-    return None 
-
-class AutoFormattedTB(BaseAutoFormattedTB):
-    def __call__(self, *args, **kw):
-        self.errStringIO = StringIO.StringIO()
-        kw.update(dict(out=self.errStringIO))
-        return BaseAutoFormattedTB.__call__(self, *args, **kw)
-
-class SyntaxTB(BaseSyntaxTB):
-    def __call__(self, etype, value, elist):
-        self.errStringIO = StringIO.StringIO()
-        self.last_syntax_error = value
-        print >> self.errStringIO, self.text(etype,value,elist)
-        
 
 class Conversation(threading.Thread):
     
@@ -47,13 +17,8 @@ class Conversation(threading.Thread):
         self.configuration = configuration
         self.locals = configuration.utilities
         
-        self.interpreter = make_IPython(argv=[],embedded=True,user_global_ns=self.locals)
-        self.interpreter.set_hook('result_display',result_display)
-        color = self.interpreter.rc.colors
-        self.interpreter.InteractiveTB = AutoFormattedTB(mode = 'Plain',
-                                                         color_scheme=color,
-                                                         tb_offset = 1)
-        self.interpreter.SyntaxTB = SyntaxTB(color_scheme=color)
+        self.interpreter = configuration.interpreter(self.locals)
+
         self.arguments = self.conversation(carrier.FetchArguments()).arguments
         self.locals.update(arguments=self.arguments)
         self.locals.update(conversation=self.conversation)
@@ -92,8 +57,8 @@ class Conversation(threading.Thread):
                        Pleas stop your Server and run it in the Foreground (fg) mode.
                    """
             mode.update(dict(debug=lambda: self.conversation(carrier.PrintText(msg))))
-        
-        
+
+
         try:
             if len(self.arguments) > 1 and self.arguments[1] in mode:
                 mode[self.arguments[1]]()
@@ -105,7 +70,7 @@ class Conversation(threading.Thread):
             dbConnection.transaction_manager.abort()
             dbConnection.close()
             self.connection.close()
-    
+
     def listScripts(self):
         self.conversation(carrier.PrintText('here is a list with all available scripts:\n'))
         for name, path in self.configuration.scripts.items():
@@ -123,28 +88,30 @@ class Conversation(threading.Thread):
             self.conversation(carrier.PrintText('script is not finished, blank line at the end missing?'))
         f.close()
         self.interpreter.runcode(code)
-        
+
     def interactiveMode(self):
+
         while True:
-            """ reset stdout and stderr stream each time
-            """
-            self.interpreter.outStringIO = StringIO.StringIO()
-            self.interpreter.InteractiveTB.errStringIO = StringIO.StringIO()
-            self.interpreter.SyntaxTB.errStringIO = StringIO.StringIO()
+            self.interpreter.resetStream()
             
-            input = self.conversation(carrier.GetCodeLine(self.interpreter))
+            input = self.conversation(carrier.GetCodeLine(self.interpreter.getReadline(),
+                                                          self.interpreter.getPrompt1(),
+                                                          self.interpreter.getPrompt2()))
             try:
                 while self.interpreter.push(input.line):
-                    input = self.conversation(carrier.GetNextCodeLine(self.interpreter))
+                    input = self.conversation(carrier.GetNextCodeLine(self.interpreter.getReadline(),
+                                                                      self.interpreter.getPrompt1(),
+                                                                      self.interpreter.getPrompt2()))
             except Exception, mesg:
                 pass
-            stderr = self.interpreter.InteractiveTB.errStringIO
+
+            stderr = self.interpreter.getErrorStream()
             if stderr.len:
                 self.conversation(carrier.SendStderr(stderr))
-            stderr = self.interpreter.SyntaxTB.errStringIO
+            stderr = self.interpreter.getSyntaxErrorStream()
             if stderr.len:
                 self.conversation(carrier.SendStderr(stderr))
-            stdout = self.interpreter.outStringIO
+            stdout = self.interpreter.getStdout()
             if stdout.len:
                 self.conversation(carrier.SendStdout(stdout))
 

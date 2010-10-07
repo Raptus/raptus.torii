@@ -60,10 +60,10 @@ class SendDisplayHook(BaseCarrier):
 
 class GetCodeLine(BaseCarrier):
     
-    def __init__(self,interpreter):
-        self.readline = interpreter.readline
-        self.ps1 = str(sys.displayhook.prompt1)
-        self.ps2 = str(sys.displayhook.prompt2)
+    def __init__(self,readline,prompt1,prompt2):
+        self.readline = readline
+        self.ps1 = str(prompt1)
+        self.ps2 = str(prompt2)
 
     def setReadline(self, client):
         readline = self.readline
@@ -85,7 +85,6 @@ class GetNextCodeLine(GetCodeLine):
 
 
 class SendStdout(BaseCarrier):
-    
     
     def __init__(self, stringIO):
         self.stringIO = stringIO
