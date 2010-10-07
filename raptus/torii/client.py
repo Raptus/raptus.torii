@@ -39,22 +39,17 @@ class Client(object):
      running zope-server (holy-zopy). The access to the server can be
      get of differnt ways. here the manual:
 
-                  
-     help        this help
-                  
-     <script> -h help of giving script
-                  
-     <script>    run the giving script
-                 
-     list        sammary-list of all avaiable scripts
-                 in_* internal
-                 ex_* external (managed by a paht defined by you self)
-                 ce_* created scripts
-                  
-     debug       interavtiv mode
 
-     create      start as debug mode but record all the giving input
-                 and store them in the directory of externals-script
+     help          this help
+                  
+     debug         interavtiv mode
+                 
+     list          sammary-list of all avaiable scripts
+
+     run <script>  run the given script
+
+
+
     """
               
     
@@ -71,8 +66,7 @@ class Client(object):
                 carrier.executable(self)
                 cPickle.dump(carrier, self.sock.makefile())
         except socket.error, msg:
-                    # !!! TODO
-                    print msg
+                    print >> sys.stdout, msg
         except KeyboardInterrupt:
             pass
         print >> sys.stdout, '\n'
