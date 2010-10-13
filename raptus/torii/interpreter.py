@@ -14,7 +14,7 @@ class AbstractInterpreter(object):
         """
 
     def getReadline(self):
-        """ return readline instance for the client 
+        """ return a  callable-object or a function to set the readline on the client
         """
 
     def resetStream(self):

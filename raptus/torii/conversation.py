@@ -22,7 +22,7 @@ class Conversation(threading.Thread):
         self.arguments = self.conversation(carrier.FetchArguments()).arguments
         self.locals.update(arguments=self.arguments)
         self.locals.update(conversation=self.conversation)
-        
+        self.conversation(carrier.BuildReadline(self.interpreter.getReadline()))
     def run(self):
         dbConnection = Zope2.DB.open()
         application=Zope2.bobo_application(connection=dbConnection)
@@ -88,19 +88,20 @@ class Conversation(threading.Thread):
             self.conversation(carrier.PrintText('script is not finished, blank line at the end missing?'))
         f.close()
         self.interpreter.runcode(code)
+        stderr = self.interpreter.getErrorStream()
+        if stderr.len:
+            self.conversation(carrier.SendStderr(stderr))
 
     def interactiveMode(self):
 
         while True:
             self.interpreter.resetStream()
             
-            input = self.conversation(carrier.GetCodeLine(self.interpreter.getReadline(),
-                                                          self.interpreter.getPrompt1(),
+            input = self.conversation(carrier.GetCodeLine(self.interpreter.getPrompt1(),
                                                           self.interpreter.getPrompt2()))
             try:
                 while self.interpreter.push(input.line):
-                    input = self.conversation(carrier.GetNextCodeLine(self.interpreter.getReadline(),
-                                                                      self.interpreter.getPrompt1(),
+                    input = self.conversation(carrier.GetNextCodeLine(self.interpreter.getPrompt1(),
                                                                       self.interpreter.getPrompt2()))
             except Exception, mesg:
                 pass

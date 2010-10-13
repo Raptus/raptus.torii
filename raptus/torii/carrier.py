@@ -1,28 +1,4 @@
 import sys
-from optparse import OptionParser
-from raptus.torii import config
-import cPickle
-import readline
-
-
-class Completer(object):
-    
-    def __init__(self, sock):
-        self.sock = sock
-        self.memo = {'':[config.tab_replacement]}
-        
-    def completer(self, text, state):
-        if not self.memo.has_key(text):
-            cPickle.dump(FetchCompleter(text,state), self.sock.makefile())
-            carrier = cPickle.load(self.sock.makefile())
-            self.memo.update({text:carrier.result})
-        for cmd in self.memo[text]:
-            if cmd.startswith(text):
-                if not state:
-                    return cmd
-                else:
-                    state -= 1
-
 
 
 class BaseCarrier(object):
@@ -51,27 +27,21 @@ class FetchArguments(BaseCarrier):
     def executable(self, client):
         self.arguments = sys.argv
 
-class SendDisplayHook(BaseCarrier):
-    def __init__(self, displayhook):
-        self.displayhook = displayhook
+class BuildReadline(BaseCarrier):
+    def __init__(self, readline):
+        self.readline = readline
     
     def executable(self, client):
-        sys.readline = self.displayhook
+        if self.readline is not None:
+            self.readline(client)
 
 class GetCodeLine(BaseCarrier):
     
-    def __init__(self,readline,prompt1,prompt2):
-        self.readline = readline
+    def __init__(self, prompt1, prompt2):
         self.ps1 = str(prompt1)
         self.ps2 = str(prompt2)
-
-    def setReadline(self, client):
-        readline = self.readline
-        readline.parse_and_bind('tab: complete')
-        readline.set_completer(Completer(client.sock).completer)
     
     def executable(self, client):
-        self.setReadline(client)
         sys.ps1 = self.ps1
         sys.ps2 = self.ps2
         self.line = raw_input(sys.ps1)
@@ -80,7 +50,8 @@ class GetCodeLine(BaseCarrier):
 class GetNextCodeLine(GetCodeLine):
     
     def executable(self, client):
-        self.setReadline(client)
+        sys.ps1 = self.ps1
+        sys.ps2 = self.ps2
         self.line = raw_input(sys.ps2)
 
 
