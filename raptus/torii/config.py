@@ -1,5 +1,6 @@
 import sys,os
 import utilities
+from raptus.torii.python import Python
 
 utilities = dict(sdir=utilities.sdir, ls=utilities.ls)
 """ utilities are a set of helper function. this will appear as globals
@@ -22,10 +23,9 @@ scripts = dict(pack= '%s/scripts/pack.py' % os.path.dirname(__file__))
     at raptus.torii.plone
 """
 
-interpreter = None
-""" here comes the standard interpreter
+interpreter = Python
+""" the standard interpreter
 """
-
 
 tab_replacement = '    '
 

@@ -48,7 +48,7 @@ class Configuration(object):
         self.utilities = copy(config.utilities)
         self.properties = copy(config.properties)
         self.scripts = copy(config.scripts)
-        self.interpreter = None # here commes the standard interpreter 
+        self.interpreter = config.interpreter
         for ext in self.extends:
             imp = __import__(ext, None, None, ext)
             
