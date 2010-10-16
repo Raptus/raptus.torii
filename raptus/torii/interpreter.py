@@ -13,6 +13,10 @@ class AbstractInterpreter(object):
         """ return prompt like ...
         """
 
+    def getPromptOut(self):
+        """ return prompt like Out[0]
+        """
+
     def getReadline(self):
         """ return a  callable-object or a function to set the readline on the client
         """

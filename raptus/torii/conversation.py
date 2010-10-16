@@ -3,6 +3,7 @@ import cPickle
 import threading
 import Zope2
 import Globals
+from copy import copy
 from Testing.makerequest import makerequest
 from codeop import compile_command
 from raptus.torii import config
@@ -15,7 +16,7 @@ class Conversation(threading.Thread):
         super(Conversation, self).__init__()
         self.connection = connection
         self.configuration = configuration
-        self.locals = configuration.utilities
+        self.locals = copy(configuration.utilities)
         
         self.interpreter = configuration.interpreter(self.locals)
 
@@ -93,16 +94,17 @@ class Conversation(threading.Thread):
             self.conversation(carrier.SendStderr(stderr))
 
     def interactiveMode(self):
-
+        self.conversation(carrier.PrintText('Available globals variable:'))
+        for key in self.locals.keys():
+            self.conversation(carrier.PrintText(key))
+        
         while True:
             self.interpreter.resetStream()
             
-            input = self.conversation(carrier.GetCodeLine(self.interpreter.getPrompt1(),
-                                                          self.interpreter.getPrompt2()))
+            input = self.conversation(carrier.GetCodeLine(self.interpreter.getPrompt1()))
             try:
                 while self.interpreter.push(input.line):
-                    input = self.conversation(carrier.GetNextCodeLine(self.interpreter.getPrompt1(),
-                                                                      self.interpreter.getPrompt2()))
+                    input = self.conversation(carrier.GetNextCodeLine(self.interpreter.getPrompt2()))
             except Exception, mesg:
                 pass
 
@@ -114,7 +116,7 @@ class Conversation(threading.Thread):
                 self.conversation(carrier.SendStderr(stderr))
             stdout = self.interpreter.getStdout()
             if stdout.len:
-                self.conversation(carrier.SendStdout(stdout))
+                self.conversation(carrier.SendStdout(stdout, self.interpreter.getPromptOut()))
 
 
     def conversation(self, carrierObject):

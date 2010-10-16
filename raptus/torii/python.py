@@ -1,10 +1,23 @@
+import sys
 import code
 import StringIO
 from raptus.torii.interpreter import AbstractInterpreter
 
 class InteractiveConsole(code.InteractiveConsole):
-    pass
+    errstream = StringIO.StringIO()
+    def write(self, data):
+        self.errstream.write(data)
+    def flushErr(self):
+        self.errstream = StringIO.StringIO()
 
+class Outputcache(object):
+    output = StringIO.StringIO()
+    def __call__(self, arg):
+        if arg is not None:
+            self.output.write(arg)
+
+    def flush(self):
+        self.output = StringIO.StringIO()
 
 class Python(AbstractInterpreter):
     """ default interpreter for torii
@@ -12,6 +25,7 @@ class Python(AbstractInterpreter):
 
     def __init__(self, locals):
         self.console = InteractiveConsole(locals)
+        self.outputcache = Outputcache()
 
     def getPrompt1(self):
         return '>>> '
@@ -19,29 +33,36 @@ class Python(AbstractInterpreter):
     def getPrompt2(self):
         return '... '
 
+    def getPromptOut(self):
+        return ''
+
     def getReadline(self):
         return None
 
     def resetStream(self):
-        """ reset stdout and stderr stream. Called each time before
-            a command is executed.
-        """
-
+        self.outputcache.flush()
+        self.console.flushErr()
+        
     def push(self, line):
+        displayhook_old = sys.displayhook
+        sys.displayhook = self.outputcache
         return self.console.push(line)
-    
+        sys.displayhook = displayhook_old
+        
     def runcode(self,code):
+        displayhook_old = sys.displayhook
+        sys.displayhook = self.outputcache
         self.console.runcode(code)
-
+        sys.displayhook = displayhook_old
     
     def complete(self, text):
         return []
     
     def getStdout(self):
-        return StringIO.StringIO()
+        return self.outputcache.output
     
     def getErrorStream(self):
-        return StringIO.StringIO()
+        return self.console.errstream
     
     def getSyntaxErrorStream(self):
         return StringIO.StringIO()

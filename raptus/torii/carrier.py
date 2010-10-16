@@ -37,33 +37,27 @@ class BuildReadline(BaseCarrier):
 
 class GetCodeLine(BaseCarrier):
     
-    def __init__(self, prompt1, prompt2):
-        self.ps1 = str(prompt1)
-        self.ps2 = str(prompt2)
-    
+    def __init__(self, prompt ):
+        self.prompt = prompt
     def executable(self, client):
-        sys.ps1 = self.ps1
-        sys.ps2 = self.ps2
-        self.line = raw_input(sys.ps1)
+        self.line = raw_input(self.prompt)
         
 
 class GetNextCodeLine(GetCodeLine):
     
     def executable(self, client):
-        sys.ps1 = self.ps1
-        sys.ps2 = self.ps2
-        self.line = raw_input(sys.ps2)
+        self.line = raw_input(self.prompt)
 
 
 class SendStdout(BaseCarrier):
     
-    def __init__(self, stringIO):
+    def __init__(self, stringIO, prompt=''):
         self.stringIO = stringIO
-        self.promt_out = str(sys.displayhook.prompt_out)
+        self.prompt = prompt
     
     def executable(self, client):
         self.stringIO.seek(0)
-        sys.stdout.write(self.promt_out)
+        sys.stdout.write(self.prompt)
         for out in self.stringIO:
             print >> sys.stdout, out
 
