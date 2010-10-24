@@ -1,3 +1,5 @@
+.. image:: docs/torii-logo.jpg
+
 Introduction
 ============
 Torii allow the access to a running zope server over a unix-domain-socket. Torii make
