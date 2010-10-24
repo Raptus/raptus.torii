@@ -42,9 +42,9 @@ class Client(object):
 
      help          this help
                   
-     debug         interavtiv mode
+     debug         interactiv mode
                  
-     list          sammary-list of all avaiable scripts
+     list          summary-list of all available scripts
 
      run <script>  run the given script
 

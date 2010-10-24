@@ -94,7 +94,7 @@ class Conversation(threading.Thread):
             self.conversation(carrier.SendStderr(stderr))
 
     def interactiveMode(self):
-        self.conversation(carrier.PrintText('Available globals variable:'))
+        self.conversation(carrier.PrintText('Available global variables:'))
         for key in self.locals.keys():
             self.conversation(carrier.PrintText(key))
         
