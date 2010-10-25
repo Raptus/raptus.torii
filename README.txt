@@ -1,15 +1,13 @@
-.. image:: docs/torii-logo.jpg
-
 Introduction
 ============
-Torii allow the access to a running zope server over a unix-domain-socket. Torii make
-also possible to run scripts from the command line to the server. In addition it's provide a python-
+Torii allows the access to a running zope server over a unix-domain-socket. Torii makes it
+also possible to run scripts from the command line on the server. In addition it provides a python-
 prompt connected to the zope-server. It means the full access of the Zope and ZODB at the runtime.
 
 
 Usage
 =====
-If you use the buildout-recipe, a shell-script are generated in buildout-directory/bin/torii.
+If you use the buildout-recipe, a shell-script is generated in buildout-directory/bin/torii.
 After starting the zope server, open a new shell, go to your project and type ./bin/torii
 
 Options:
@@ -30,16 +28,16 @@ Installation
 The simplest way to install torii is to use raptus.recipe.torii with a buildout for your
 project. This will add the required information in the zope.conf and build a startup
 script. The recipe provides two buildout-variables. The first is named ${torii:additonal-conf}
-with it hold the additional information for the zope.conf. This way you're self responsible
-how the zope.conf are created. The second variable ${torii:eggs} is a list with all required
+and holds the additional information for the zope.conf. This way you're self responsible
+how the zope.conf is created. The second variable ${torii:eggs} is a list with all required
 eggs to add in the python-path.
 
 Options
 -------
 socket-path
-    where the unix-domain-socket are located 
+    where the unix-domain-socket is located 
 threaded
-    If True torii created each connection a new thread therefore other ports aren't stopped.
+    If true, torii creates for each connection a new thread, which means other ports aren't stopped.
     Default is False
 extends
     additional-packages for extending torii. e.g. raptus.troii.plone
@@ -99,8 +97,8 @@ Additional components
 =====================
 
 raptus.torii.plone
-    This additional package make the interface to plone. It provides some scripts, a global 
-    variable 'plone' and set the siteManager(access to persistence zope.components ) at the startup
+    This additional package offers the interface to plone. It provides some scripts, a global 
+    variable 'plone' and sets the siteManager(access to persistence zope.components ) at the startup
 
 raptus.torii.ipython
     A implementation of ipython. Code-completion, readline and colored python prompt.
@@ -119,7 +117,7 @@ utilities = dict(name=method)
 
 properties = dict(name=method)
     properties are a set of helper attributes. Similar to the utilities, but
-    properties are called by each connection. The call of the function performed
+    properties are called by each connection. The call of the function is performed
     in the context of the connection. This means you can use local attributes
     in your function, like app, arguments ... Only the return value is stored 
     in the globals. To extend take a look in raptus.torii.plone.
@@ -167,7 +165,7 @@ Get all plone users::
 
 Tests
 =====
-Sorry, but no automated test are existing sadly. This project was created on SnowLeopard and
+Sorry, but sadly there exist no automated tests. This project was created on SnowLeopard and
 was running on plone 3 and plone 4.
 
 
