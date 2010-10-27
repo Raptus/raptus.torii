@@ -32,9 +32,6 @@ setup(name='raptus.torii',
       ],
       entry_points="""
       # -*- Entry points: -*-
-
-      [z3c.autoinclude.plugin]
-      target = plone
       """,
       setup_requires=[ ],
       paster_plugins=[ ],
