@@ -5,18 +5,21 @@ version = '1.0b1'
 
 setup(name='raptus.torii',
       version=version,
-      description="",
+      description='Torii allows access to a running zope instance over a python prompt',
       long_description=open("README.txt").read() + "\n" +
                        open(os.path.join("docs", "HISTORY.txt")).read(),
       # Get more strings from
       # http://pypi.python.org/pypi?%3Aaction=list_classifiers
       classifiers=[
         "Framework :: Plone",
+        "Framework :: Zope2",
+        "Framework :: Zope3",
+        "Framework :: ZODB",
         "Programming Language :: Python",
         ],
-      keywords='',
-      author='',
-      author_email='',
+      keywords='zope remote prompt zodb',
+      author='sriolo',
+      author_email='sriolo@raptus.com',
       url='http://svn.plone.org/svn/collective/',
       license='GPL',
       packages=find_packages(exclude=['ez_setup']),
