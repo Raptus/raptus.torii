@@ -42,7 +42,7 @@ class Client(object):
 
      help          this help
                   
-     debug         interactiv mode
+     debug         interactive mode
                  
      list          summary-list of all available scripts
 
