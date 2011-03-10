@@ -35,7 +35,7 @@ class ToriiServer(asyncore.dispatcher):
         return len(asyncore.socket_map) < CONNECTION_LIMIT
 
     def writable (self):
-        return True
+        return False
     
     def create_socket(self, family, type):
         asyncore.dispatcher.create_socket(self, family, type)
